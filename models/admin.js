@@ -1,6 +1,6 @@
 const pool = require("../db/index");
 const { hashPassword, checkPassword } = require("../helpers/encryptPassword");
-const { token } = require("../helpers/jwt");
+const { generateToken } = require("../helpers/jwt");
 
 class AdminModel {
   static async getAdmin() {
@@ -14,14 +14,15 @@ class AdminModel {
     }
   }
   static async createAdmin(input) {
+    const { inputPassword, inputUsername } = input;
     try {
-      const encrypted = hashPassword(input.password);
+      const encrypted = hashPassword(inputPassword);
       const result = await pool.query(
         `INSERT INTO admin (username, password) VALUES ($1, $2)`,
         [input.username, encrypted]
       );
       if (result) {
-        return `Input ${input.username} inserted`;
+        return `Input ${inputUsername} inserted`;
       }
     } catch (error) {
       console.log(error);
@@ -29,6 +30,9 @@ class AdminModel {
   }
   static async loginAdmin(input) {
     try {
+      /**
+       * await pool.query(`Query Statements`, [value])
+       */
       const hashedPassword = await pool.query(
         `SELECT password FROM admin WHERE username = $1`,
         [input.username]
@@ -36,7 +40,7 @@ class AdminModel {
       const hashedPasswordData = hashedPassword.rows[0].password;
       const checked = checkPassword(input.password, hashedPasswordData);
       if (checked) {
-        return token(input.username);
+        return generateToken(input.username);
       } else {
         return "wrong password";
       }
